@@ -1,240 +1,109 @@
-# Ecosystem Standards - CarlosVergaraChile
+# 📜 ECOSYSTEM STANDARDS & ENGINEERING MANIFESTO
 
-## Propósito
-Estándares consolidados para garantizar consistencia, calidad y mantenibilidad en los 25 repositorios del ecosistema.
+**Versión:** 1.0.0 | **Jurisdicción:** Todos los repositorios de CarlosVergaraChile
 
-## 1. Estándares de Código
+---
 
-### 1.1 Lenguajes Soportados
+## 🎯 1. Principios Fundamentales
 
-#### Python
-- **Version**: 3.11+
-- **Linter**: ruff
-- **Formatter**: black
-- **Type Checker**: mypy
-- **Testing**: pytest
-- **Coverage**: > 80%
+- **Code is Liability**: El mejor código es el que no se escribe. Reutiliza antes de crear.
+- **Single Source of Truth**: documentation-hub dicta las reglas.
+- **Automate Everything**: Si tienes que hacerlo más de dos veces, automatízalo (CI/CD).
 
-#### Go
-- **Version**: 1.21+
-- **Linter**: golangci-lint
-- **Formatter**: gofmt
-- **Testing**: Go test
-- **Coverage**: > 80%
+---
 
-#### JavaScript/TypeScript
-- **Version**: Node 18+
-- **Linter**: ESLint
-- **Formatter**: Prettier
-- **Testing**: Jest/Vitest
-- **Coverage**: > 80%
+## 🏗️ 2. Arquitectura de Backend (Node.js/Express)
 
-### 1.2 Configuración Común
+Para mantener la escalabilidad y testabilidad, se exige el patrón **Controller-Service-Model**.
 
-```yaml
-# .editorconfig
-root = true
-[*]
-charset = utf-8
-end_of_line = lf
-insert_final_newline = true
-trim_trailing_whitespace = true
+### ❌ PROHIBIDO (Fat Controllers)
+Meter lógica de negocio, llamadas a DB y respuestas HTTP en un solo archivo.
 
-[*.{py,go,js,ts}]
-indent_style = space
-indent_size = 4
+### ✅ OBLIGATORIO (Separation of Concerns)
+
+- **Controller** (`/controllers`): Solo recibe HTTP (req), valida inputs y responde (res). Llama al Service.
+- **Service** (`/services`): Contiene la lógica pura de negocio ("Si usuario existe, enviar email"). Llama al Model.
+- **Model** (`/models`): Esquema de base de datos (Mongoose/SQL). Solo habla con la DB.
+
+### Estructura de Carpetas Estándar
+
+```
+src/
+├── config/         # Variables de entorno y configs (DB, Logger)
+├── controllers/    # Manejo de peticiones HTTP
+├── services/       # Lógica de negocio
+├── models/         # Esquemas de datos
+├── routes/         # Definición de endpoints
+├── utils/          # Helpers puros (fechas, formatos)
+└── app.js          # Entry point
 ```
 
-### 1.3 Naming Conventions
+---
 
-- **Files**: snake_case (Python), camelCase (JS)
-- **Functions**: snake_case
-- **Classes**: PascalCase
-- **Constants**: UPPERCASE_WITH_UNDERSCORES
+## 🖥️ 3. Estándares de Código (Code Style)
 
-## 2. Estructura de Repositorios
+- **Formateo**: Prettier es obligatorio en raíz (`.prettierrc`). Sin debate sobre puntos y coma.
+- **Linting**: ESLint debe pasar sin errores antes de mergear (`npm run lint`).
 
-### 2.1 Directorios Base
-```
-repository/
-├── src/              # Source code
-├── tests/            # Test files
-├── docs/             # Documentation
-├── scripts/          # Utility scripts
-├── .github/          # GitHub Actions
-│   └── workflows/    # CI/CD workflows
-├── README.md         # Repository overview
-├── CHANGELOG.md      # Version history
-├── LICENSE           # License file
-└── .gitignore        # Git ignore rules
-```
+### Naming Conventions
 
-### 2.2 Essential Files
+- **Variables/Funciones**: `camelCase` (ej: `getUserData`)
+- **Clases/Componentes**: `PascalCase` (ej: `UserProfile`)
+- **Constantes**: `UPPER_SNAKE_CASE` (ej: `MAX_RETRY_ATTEMPTS`)
+- **Booleanos**: Prefijos `is`, `has`, `should` (ej: `isActive`)
 
-**README.md**
-- Project description
-- Installation instructions
-- Usage examples
-- Contributing guidelines
-- License information
+---
 
-**CHANGELOG.md**
-- Format: Keep a Changelog
-- Sections: Added, Changed, Deprecated, Removed, Fixed, Security
+## 🛡️ 4. Seguridad (Security Baseline)
 
-**.gitignore**
-- Language-specific patterns
-- Environment files
-- Build artifacts
-- IDE configurations
+- **Cero Secretos**: NUNCA commitear `.env`, claves API, o credenciales. Usar `dotenv` localmente y GitHub Secrets en producción.
+- **Validación de Inputs**: NUNCA confiar en el usuario. Validar `req.body` y `req.params` (usando Joi, Zod o express-validator) antes de procesar.
+- **Dependencias**: Prohibido usar librerías con vulnerabilidades críticas (verificadas por Dependabot/npm audit).
 
-## 3. Git Workflow
+---
 
-### 3.1 Branch Strategy
-- **main**: Production code
-- **develop**: Integration branch
-- **feature/***: New features
-- **bugfix/***: Bug fixes
-- **hotfix/***: Production hotfixes
+## 🔀 5. Flujo de Trabajo Git (Git Workflow)
 
-### 3.2 Commit Messages
-Format: `<type>(<scope>): <subject>`
+### Ramas
 
-Types: feat, fix, docs, style, refactor, perf, test, chore
+- **`main`**: Producción (Intocable directamente).
+- **`dev` o `staging`**: Pruebas.
+- **`feat/nombre-feature`**: Para nuevas funcionalidades.
+- **`fix/nombre-bug`**: Para correcciones.
 
-Example: `feat(auth): add OAuth2 support`
+### Commits (Conventional Commits)
 
-### 3.3 Pull Request Process
-1. Create feature branch from develop
-2. Implement changes with tests
-3. Create PR with description
-4. Minimum 1 approval required
-5. All checks must pass
-6. Merge to develop
-7. Create release PR to main
+**Formato:** `tipo(scope): descripción breve`
 
-## 4. Testing Standards
+**Tipos permitidos:**
+- `feat`: Nueva funcionalidad.
+- `fix`: Corrección de bug.
+- `docs`: Cambios en documentación.
+- `chore`: Mantenimiento (dependencias, configs).
+- `refactor`: Cambio de código que no altera funcionalidad.
 
-### 4.1 Test Organization
-```
-tests/
-├── unit/          # Unit tests
-├── integration/   # Integration tests
-├── e2e/           # End-to-end tests
-└── performance/   # Performance tests
-```
+**Ejemplo:** `feat(auth): implement JWT login strategy`
 
-### 4.2 Naming Conventions
-- Test files: `test_*.py` or `*_test.go`
-- Test functions: `test_<function_name>`
-- Test classes: `Test<ClassName>`
+---
 
-### 4.3 Coverage Requirements
-- Minimum: 80%
-- Critical paths: 100%
-- Excluded: Constants, Config, Auto-generated
+## 📝 6. Documentación
 
-## 5. Documentation Standards
+### README.md
+Todo repositorio debe tener un README con:
+- Qué hace el proyecto.
+- Prerrequisitos (Node version, API Keys necesarias).
+- Cómo instalar (`npm install`) y correr (`npm run dev`).
 
-### 5.1 Code Documentation
-- Docstrings for all public functions
-- Type hints in all functions
-- Comments for complex logic
-- Avoid redundant comments
+### Código
+Comentar el **"Por qué"**, no el **"Qué"**. El código dice qué hace; el comentario explica la decisión compleja.
 
-### 5.2 API Documentation
-- OpenAPI/Swagger specs
-- Request/Response examples
-- Error codes documented
-- Rate limits documented
+---
 
-### 5.3 Architecture Documentation
-- ADR (Architecture Decision Records)
-- Sequence diagrams for flows
-- Component diagrams
-- Deployment architecture
+## 🚀 CÓMO APLICAR ESTA CONSTITUCIÓN
 
-## 6. Security Standards
+1. Ve a tu repositorio `documentation-hub`.
+2. Crea un archivo nuevo llamado `ECOSYSTEM-STANDARDS.md`.
+3. Pega todo el contenido de arriba (incluyendo los encabezados Markdown).
+4. Haz Commit.
 
-### 6.1 Code Security
-- No hardcoded secrets
-- Input validation
-- SQL injection prevention
-- CORS properly configured
-- CSRF protection enabled
-
-### 6.2 Dependency Management
-- Dependabot enabled
-- Regular updates checked
-- Vulnerable dependencies blocked
-- License compliance verified
-
-### 6.3 Secrets Management
-- GitHub Secrets for CI/CD
-- Environment variables for local
-- Rotation policy: 90 days
-- Audit logging enabled
-
-## 7. Performance Standards
-
-### 7.1 API Performance
-- Response time: < 200ms (p95)
-- Throughput: > 1000 req/s
-- Memory: < 512MB per instance
-- CPU: < 80% under load
-
-### 7.2 Database Performance
-- Query time: < 100ms (p95)
-- Connection pooling enabled
-- Indexes on foreign keys
-- Query optimization reviewed
-
-## 8. CI/CD Standards
-
-### 8.1 GitHub Actions Workflows
-- Lint check on PR
-- Test execution on PR
-- Coverage report on PR
-- Build artifact creation
-- Deployment to staging
-- Production deployment
-
-### 8.2 Checks Required
-- Tests pass
-- Coverage maintained
-- Linting passes
-- Security scan passes
-- No breaking changes
-
-## 9. Versioning
-
-### 9.1 Semantic Versioning
-- Format: MAJOR.MINOR.PATCH
-- MAJOR: Breaking changes
-- MINOR: New features
-- PATCH: Bug fixes
-
-### 9.2 Release Tagging
-- Tag format: `v{MAJOR}.{MINOR}.{PATCH}`
-- Tag on main branch only
-- Release notes in GitHub Releases
-
-## 10. Monitoring & Observability
-
-### 10.1 Logging
-- Structured logging
-- Log levels: DEBUG, INFO, WARNING, ERROR, CRITICAL
-- Correlation IDs for tracing
-- No sensitive data in logs
-
-### 10.2 Metrics
-- Application metrics
-- Business metrics
-- Infrastructure metrics
-- Dashboards for each component
-
-### 10.3 Tracing
-- Distributed tracing enabled
-- Transaction tracking
-- Performance insights
-- Error tracking
+Una vez guardado, tu "Gem Auditor" (el workflow que creamos antes) leerá este archivo automáticamente y empezará a juzgar a tus proyectos bajo estas leyes.
